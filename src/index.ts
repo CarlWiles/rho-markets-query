@@ -70,17 +70,27 @@ async function queryUserAccount(accountAddress: string) {
 
     try {
       const decimal = await cTokenContract.decimals();
+      const exchangeRate = await cTokenContract.exchangeRateStored();
+
       const balance = await cTokenContract.balanceOf(accountAddress);
+      const supplyBbalance = balance * exchangeRate;
+
       console.log(
-        `${symbol} Supply Balance: ${ethers.formatUnits(balance, decimal)} Tokens`
+        `${symbol} supplyBbalance: ${ethers.formatUnits(
+          supplyBbalance,
+          decimal
+        )} Tokens`
       );
 
       const borrowBalance = await cTokenContract.borrowBalanceStored(
         accountAddress
       );
+
+      const underlyingBorrowBalance = borrowBalance * exchangeRate;
+
       console.log(
-        `${symbol} Borrow Balance: ${ethers.formatUnits(
-          borrowBalance,
+        `${symbol} underlyingBorrowBalance: ${ethers.formatUnits(
+          underlyingBorrowBalance,
           18
         )} Tokens`
       );
