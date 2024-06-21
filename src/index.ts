@@ -32,6 +32,13 @@ const rTokenAbi = [
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "exchangeRateStored",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
 ];
 
 const oracleABI = [
@@ -60,6 +67,8 @@ const R_TOKEN_LIST = [
   { symbol: "rwstETH", address: "0xe4FC4C444efFB5ECa80274c021f652980794Eae6" },
 ];
 
+const BASE = 10n ** 18n;
+
 async function queryUserAccount(accountAddress: string) {
   const provider = new ethers.JsonRpcProvider(YOUR_RPC);
 
@@ -69,11 +78,11 @@ async function queryUserAccount(accountAddress: string) {
     const oracleContract = new ethers.Contract(ORACLE, oracleABI, provider);
 
     try {
-      const decimal = await cTokenContract.decimals();
-      const exchangeRate = await cTokenContract.exchangeRateStored();
+      const decimal: number = await cTokenContract.decimals();
+      const exchangeRate: bigint = await cTokenContract.exchangeRateStored();
 
-      const balance = await cTokenContract.balanceOf(accountAddress);
-      const supplyBbalance = balance * exchangeRate;
+      const balance: bigint = await cTokenContract.balanceOf(accountAddress);
+      const supplyBbalance = (balance * exchangeRate) / BASE;
 
       console.log(
         `${symbol} supplyBbalance: ${ethers.formatUnits(
@@ -82,26 +91,26 @@ async function queryUserAccount(accountAddress: string) {
         )} Tokens`
       );
 
-      const borrowBalance = await cTokenContract.borrowBalanceStored(
+      const borrowBalance: bigint = await cTokenContract.borrowBalanceStored(
         accountAddress
       );
 
-      const underlyingBorrowBalance = borrowBalance * exchangeRate;
+      const underlyingBorrowBalance = (borrowBalance * exchangeRate) / BASE;
 
       console.log(
         `${symbol} underlyingBorrowBalance: ${ethers.formatUnits(
           underlyingBorrowBalance,
-          18
+          decimal
         )} Tokens`
       );
 
       const accrualBlockNumber = await cTokenContract.accrualBlockNumber();
       console.log(`${symbol} Accrual Block Number: ${accrualBlockNumber}`);
 
-      const price = await oracleContract.getPrice(token);
-      console.log(`${symbol} current price: ${price}`);
+      const price: bigint = await oracleContract.getPrice(token.address);
+      console.log(`${symbol} current price: ${ethers.formatEther(price)}`);
     } catch (error) {
-      console.error(`User asset  not exist ${symbol} #${address}`);
+      console.error(`User asset  not exist ${symbol} #${address}`, error);
     }
   }
 }
